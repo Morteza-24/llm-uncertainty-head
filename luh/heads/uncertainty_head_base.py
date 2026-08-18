@@ -63,13 +63,13 @@ class UncertaintyHeadBase(nn.Module):
                 repo_id=pretrained_path,
                 filename="config.yaml",
                 revision=revision,
-                use_auth_token=use_auth_token,
+                # use_auth_token=use_auth_token,
             )
             weights_path = hf_hub_download(
                 repo_id=pretrained_path,
                 filename="weights.pth",
                 revision=revision,
-                use_auth_token=use_auth_token,
+                # use_auth_token=use_auth_token,
             )
 
         cfg = OmegaConf.load(config_path)
