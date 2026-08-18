@@ -1,6 +1,6 @@
 from omegaconf import OmegaConf
 from pathlib import Path
-from huggingface_hub import HfApi, Repository, hf_hub_download
+from huggingface_hub import HfApi, hf_hub_download
 import tempfile
 from abc import abstractmethod
 
@@ -103,25 +103,14 @@ class UncertaintyHeadBase(nn.Module):
         api = HfApi()
         api.create_repo(repo_id=repo_id, exist_ok=True, token=token, private=private)
 
-        # Use a temporary directory for local repository operations
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
-
-            # Clone the Hugging Face repository into the temporary directory
-            repo = Repository(
-                local_dir=str(tmp_path), clone_from=repo_id, use_auth_token=token
+            self.save(tmp_path)
+            api.upload_folder(
+                folder_path=str(tmp_path),
+                repo_id=repo_id,
+                token=token,
+                commit_message="Upload UncertaintyHead model and config",
             )
-
-            # Save model and config to the repository directory
-            # output_dir = tmp_path / "model"
-            # output_dir.mkdir(parents=True, exist_ok=True)
-            # self.save(output_dir)
-            output_dir = tmp_path
-            self.save(output_dir)
-
-            # Add and commit files to the repository
-            repo.git_add(auto_lfs_track=True)
-            repo.git_commit("Upload UncertaintyHead model and config")
-            repo.git_push()
 
         log.info(f"Model pushed to Hugging Face Hub: https://huggingface.co/{repo_id}")
