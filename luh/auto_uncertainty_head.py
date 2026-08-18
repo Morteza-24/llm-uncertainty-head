@@ -40,7 +40,7 @@ class AutoUncertaintyHead:
                 repo_id=pretrained_path,
                 filename="config.yaml",
                 revision=revision,
-                use_auth_token=use_auth_token,
+                # use_auth_token=use_auth_token,
             )
             
         cfg = OmegaConf.load(cfg)
