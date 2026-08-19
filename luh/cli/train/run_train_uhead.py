@@ -153,28 +153,12 @@ def load_data(config, tokenizer):
     return tokenized_data
 
 
-# def _add_attention_mask(e):
-#     if "attention_mask" not in e.keys() or e["attention_mask"] is None:
-#         e["attention_mask"] = [1 for _ in e["input_ids"]]
-#     return e
-
-
 class DataCollatorForLanguageModelingWithUncertainty(DataCollatorForLanguageModeling):
     def __init__(self, tokenizer, *args, **kwargs):
         self._tokenizer = tokenizer
         super().__init__(tokenizer, *args, **kwargs)
 
     def torch_call(self, examples):
-        #examples = [_add_attention_mask(e) for e in examples]
-        # ex = [{"input_ids": e["input_ids"], "attention_mask": e["attention_mask"]} for e in examples]
-        #examples = [_add_attention_mask(e) for e in examples]
-        # ex = [
-        #     {k: v for k, v in e.items() if k not in [
-        #         "uncertainty_labels", "reply"
-        #      ]} for e in examples
-        # ]
-        # batch = super().torch_call(ex)
-
         batch_size = len(examples)
 
         # Do padding of input_ids
