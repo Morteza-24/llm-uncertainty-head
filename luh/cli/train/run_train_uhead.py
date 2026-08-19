@@ -129,6 +129,11 @@ def load_data(config, tokenizer):
     if config.dataset.num_instances:
         dataset["train"] = dataset["train"].select(range(config.dataset.num_instances))
 
+    num_eval_instances = getattr(config.dataset, "num_eval_instances", 0)
+    if num_eval_instances and config.dataset.validation in dataset:
+        dataset[config.dataset.validation] = dataset[config.dataset.validation].select(
+            range(num_eval_instances)
+        )
 
     tokenized_data = dataset["train"] if config.do_train else Dataset.from_dict({})
 

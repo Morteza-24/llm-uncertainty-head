@@ -29,7 +29,8 @@ ue_layer:
 
 dataset:
   path: hf:llm-uncertainty-head/train_akimbio_mistral
-  num_instances: 0
+  num_instances: 500
+  num_eval_instances: 50
   test_size: 0.0
   validation: test
 
