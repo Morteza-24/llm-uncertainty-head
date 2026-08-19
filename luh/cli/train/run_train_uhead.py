@@ -2,6 +2,7 @@ import hydra
 from pathlib import Path
 import os
 import json
+import inspect
 from scipy.special import expit
 from sklearn.metrics import (
     roc_auc_score,
@@ -503,33 +504,41 @@ def main(config):
     log.info("Done.")
     log.info(repr(tokenized_data))
 
-    train_args = TrainingArguments(
-        num_train_epochs=config.training_arguments.num_train_epochs,
-        per_device_train_batch_size=config.training_arguments.per_device_train_batch_size,
-        per_device_eval_batch_size=config.training_arguments.per_device_train_batch_size, # TODO: add parameter for eval batch size
-        gradient_accumulation_steps=config.training_arguments.gradient_accumulation_steps,
-        eval_accumulation_steps=4,
-        learning_rate=config.training_arguments.learning_rate,
-        weight_decay=config.training_arguments.weight_decay,
-        max_grad_norm=config.training_arguments.max_grad_norm,
-        warmup_ratio=config.training_arguments.warmup_ratio,
-        lr_scheduler_type="linear",
-        fp16=True,
-        fp16_full_eval=False,
-        load_best_model_at_end=True if config.do_save_checkpoints else False,
-        metric_for_best_model="pr_auc",
-        eval_strategy="epoch",
-        logging_strategy="epoch",
-        save_strategy="epoch" if config.do_save_checkpoints else "no",
-        output_dir=Path(output_dir) / "outputs",
-        logging_dir=Path(output_dir) / "transformers_logs",
-        report_to=config.report_to if config.report_to else None,
-        include_num_input_tokens_seen=True,
-        gradient_checkpointing=False,
-        dataloader_num_workers=1,
-        remove_unused_columns=False,
-        save_total_limit=1,
-    )
+    training_args_kwargs = {
+        "num_train_epochs": config.training_arguments.num_train_epochs,
+        "per_device_train_batch_size": config.training_arguments.per_device_train_batch_size,
+        "per_device_eval_batch_size": config.training_arguments.per_device_train_batch_size, # TODO: add parameter for eval batch size
+        "gradient_accumulation_steps": config.training_arguments.gradient_accumulation_steps,
+        "eval_accumulation_steps": 4,
+        "learning_rate": config.training_arguments.learning_rate,
+        "weight_decay": config.training_arguments.weight_decay,
+        "max_grad_norm": config.training_arguments.max_grad_norm,
+        "lr_scheduler_type": "linear",
+        "fp16": True,
+        "fp16_full_eval": False,
+        "load_best_model_at_end": True if config.do_save_checkpoints else False,
+        "metric_for_best_model": "pr_auc",
+        "eval_strategy": "epoch",
+        "logging_strategy": "epoch",
+        "save_strategy": "epoch" if config.do_save_checkpoints else "no",
+        "output_dir": str(Path(output_dir) / "outputs"),
+        "report_to": config.report_to if config.report_to else None,
+        "include_num_input_tokens_seen": True,
+        "gradient_checkpointing": False,
+        "dataloader_num_workers": 1,
+        "remove_unused_columns": False,
+        "save_total_limit": 1,
+    }
+    # transformers v4: warmup_ratio; v5: warmup_steps accepts a float ratio in [0, 1)
+    training_args_params = inspect.signature(TrainingArguments.__init__).parameters
+    if "warmup_ratio" in training_args_params:
+        training_args_kwargs["warmup_ratio"] = config.training_arguments.warmup_ratio
+    else:
+        training_args_kwargs["warmup_steps"] = config.training_arguments.warmup_ratio
+    if "logging_dir" in training_args_params:
+        training_args_kwargs["logging_dir"] = str(Path(output_dir) / "transformers_logs")
+
+    train_args = TrainingArguments(**training_args_kwargs)
 
     print()
 
@@ -574,6 +583,11 @@ def main(config):
             return metrics["eval_f1"]
 
         def hp_space(trial):
+            warmup_key = (
+                "warmup_ratio"
+                if "warmup_ratio" in inspect.signature(TrainingArguments.__init__).parameters
+                else "warmup_steps"
+            )
             return {
                 "training_arguments": {
                     "learning_rate": trial.suggest_categorical(
@@ -582,8 +596,8 @@ def main(config):
                     "weight_decay": trial.suggest_categorical(
                         "weight_decay", [0.0, 0.01, 0.1, 0.5]
                     ),
-                    "warmup_ratio": trial.suggest_categorical(
-                        "warmup_ratio", [0.0, 0.1]
+                    warmup_key: trial.suggest_categorical(
+                        warmup_key, [0.0, 0.1]
                     ),
                     "num_train_epochs": trial.suggest_categorical(
                         "num_train_epochs", [5, 7, 10, 15]
