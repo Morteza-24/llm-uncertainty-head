@@ -37,7 +37,6 @@ class UncertaintyHeadClaim(UncertaintyHeadBase):
                 nn.GELU(),
             )
 
-        #self.position_embedding = nn.Embedding(5000, head_dim)
         self.entity_embedding = nn.Embedding(2, head_dim)
         
         encoder_layer = nn.TransformerEncoderLayer(
@@ -66,17 +65,14 @@ class UncertaintyHeadClaim(UncertaintyHeadBase):
         src_key_padding_mask = (X_attn_mask == 0)
         results = []
         batch_size = len(claims)
-        #max_tokens = X.size(1)
 
         for i in range(batch_size):
             entity_mask = claims[i]
             if len(entity_mask) == 0:
                 continue
             ent_embeds = self.entity_embedding(entity_mask)
-            #positions = torch.arange(max_tokens, device=X.device).unsqueeze(0)
-            #pos_embeds = self.position_embedding(positions)
             
-            out = features[i].unsqueeze(0).repeat(ent_embeds.shape[0], 1, 1) + ent_embeds # + pos_embeds.repeat(ent_embeds.shape[0], 1, 1)
+            out = features[i].unsqueeze(0).repeat(ent_embeds.shape[0], 1, 1) + ent_embeds
             src_key_pd = src_key_padding_mask[i].unsqueeze(0).repeat(ent_embeds.shape[0], 1)
 
             assert entity_mask.shape == src_key_pd.shape
