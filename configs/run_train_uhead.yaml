@@ -13,7 +13,7 @@ ue_layer:
   pos_weight: 3
   output_attention: true
   head_cfg:
-    head_type: claim
+    head_type: luh
     feature_extractor:
     - name: luh.feature_extractors.basic_attention
       layer_nums: all

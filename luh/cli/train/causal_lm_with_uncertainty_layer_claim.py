@@ -1,4 +1,5 @@
-from transformers.modeling_utils import PreTrainedModel, PretrainedConfig
+from transformers.modeling_utils import PreTrainedModel
+from transformers.configuration_utils import PretrainedConfig
 
 import torch
 from torch.nn import BCEWithLogitsLoss
